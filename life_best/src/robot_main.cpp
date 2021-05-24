@@ -1,3 +1,4 @@
+
 #include "ros/ros.h"
 #include <iostream>
 #include "life_msgs/motor.h"
@@ -168,9 +169,8 @@ int main(int argc,char** argv){
       else{
         state.data = 0;      
       }
-      if(state.data > 0){
-	 cout<<"warn"<<endl;
-	 cout<<(force.abs_sum()-1)*ROBOT_WEIGHT<<endl;
+      if(state.data > 0){;
+	 cout<<"force : "<<(force.abs_sum()-1)*ROBOT_WEIGHT<<endl;
          if((force.abs_sum()-1)*ROBOT_WEIGHT > 1000){
             step = 1;
             ros::Duration(2).sleep();      
@@ -202,7 +202,7 @@ int main(int argc,char** argv){
     }
     else if(step == 2){
       double angle = atan2(view_target(0),view_target(1));
-      cout<<angle<<endl;
+      cout<<"angle : "<<angle<<endl;
       double weight = angle*SPEED_WEIGHT;
       m_msg.left = 120 + weight;
       m_msg.right = 70 + weight;

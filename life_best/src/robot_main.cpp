@@ -9,14 +9,14 @@
 #include <Eigen/Dense>
 #include <queue>
 #define ROBOT_WEIGHT 5.5
-#define SPEED_WEIGHT 15
+#define SPEED_WEIGHT 10
 
 using namespace std;
 using namespace Eigen;
 
-int dist = -1;
+int dist = 10000;
 bool is_find = false;
-int step = 0;
+int step = 1;
 
 struct Position{
   double x = 0;
@@ -118,8 +118,8 @@ void CameraFun(const life_msgs::yolo& msg){
   rotation(0,3) = pos.x;
   rotation(1,3) = pos.y;
   rotation(2,3) = pos.z;
-  double x_angle = (320 - msg.x)/320.0*85.0*3.1415/180.0;
-  double y_angle = (240 - msg.y)/240.0*63.0*3.1415/180.0;
+  double x_angle = -msg.x/320.0*85.0*3.1415/180.0;
+  double y_angle = -msg.y/240.0*63.0*3.1415/180.0;
   Vector4d target(sin(x_angle)*dist,cos(x_angle)*dist,tan(y_angle)*dist,1);
   target_pos = rotation*target;
   
@@ -169,7 +169,9 @@ int main(int argc,char** argv){
         state.data = 0;      
       }
       if(state.data > 0){
-         if(force.abs_sum() > 500){
+	 cout<<"warn"<<endl;
+	 cout<<(force.abs_sum()-1)*ROBOT_WEIGHT<<endl;
+         if((force.abs_sum()-1)*ROBOT_WEIGHT > 1000){
             step = 1;
             ros::Duration(2).sleep();      
 	 }
@@ -193,16 +195,17 @@ int main(int argc,char** argv){
              turn_cnt = 0;
            }
          }
-         turn_cnt = 0;
+         turn_cnt++;
       }
       else
         step = 2;
     }
     else if(step == 2){
       double angle = atan2(view_target(0),view_target(1));
+      cout<<angle<<endl;
       double weight = angle*SPEED_WEIGHT;
-      m_msg.left = 120 - weight;
-      m_msg.right = 70 - weight;
+      m_msg.left = 120 + weight;
+      m_msg.right = 70 + weight;
       if(dist < 80){
       	m_msg.left = 90;
        	m_msg.right = 90;

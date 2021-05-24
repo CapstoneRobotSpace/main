@@ -9,12 +9,14 @@
 #include <Eigen/Dense>
 #include <queue>
 #define ROBOT_WEIGHT 5.5
-
+#define SPEED_WEIGHT 15
 
 using namespace std;
 using namespace Eigen;
 
 int dist = -1;
+bool is_find = false;
+int step = 0;
 
 struct Position{
   double x = 0;
@@ -50,6 +52,8 @@ void ImuFun(const sensor_msgs::Imu& msg){
   cnt++;
   if(cnt == 10){
     rot_q.push(rot);
+    while(rot_q.size()>50)
+	rot_q.pop();
     cnt = 0;
   }
   Matrix4d roll,pitch,yaw,rotation;
@@ -84,11 +88,15 @@ void ImuFun(const sensor_msgs::Imu& msg){
 
 void CameraFun(const life_msgs::yolo& msg){
   Rotation pre = rot;
-  if(rot_q.size()){
-    while(msg.stamp >= rot_q.front().stamp){
+  if(step == 1)
+	is_find = msg.result;
+  while(rot_q.size()){
+    if(msg.stamp >= rot_q.front().stamp){
       pre = rot_q.front();
       rot_q.pop();  
     }
+    else
+	break;
   }
   Matrix4d roll,pitch,yaw,rotation;
   roll<< 1,0,0,0,
@@ -144,10 +152,13 @@ int main(int argc,char** argv){
   ros::Subscriber odom_sub = nh.subscribe("/odom", 1 ,OdomFun);
   life_msgs::motor m_msg;
   std_msgs::Int32 state;
-  int step = 0;
+  
+  int turn_cnt = 0;
+  bool turn_flag = false;
   while(ros::ok()){
     if(step == 0){
-      cout<<abs(unit(2))<<endl;
+      m_msg.left = 90;
+      m_msg.right = 90;
       if(abs(unit(2)) < 0.4){
         state.data = 2;      
       }
@@ -158,16 +169,50 @@ int main(int argc,char** argv){
         state.data = 0;      
       }
       if(state.data > 0){
-         if(force.abs_sum() > 500)
-            step = 1;      
+         if(force.abs_sum() > 500){
+            step = 1;
+            ros::Duration(2).sleep();      
+	 }
       }
     }
     else if(step == 1){
-      // motor_go
-      cout<<view_target.transpose()<<endl;
+      if(!is_find){
+         if(!turn_flag){
+           m_msg.left = 75;
+           m_msg.right = 105;
+         }
+         else{
+           m_msg.left = 105;
+           m_msg.right = 75;
+         }
+         if(turn_cnt > 200){
+           m_msg.left = 90;
+           m_msg.right = 90;
+           if(turn_cnt > 300){
+             turn_flag = !turn_flag;
+             turn_cnt = 0;
+           }
+         }
+         turn_cnt = 0;
+      }
+      else
+        step = 2;
     }
+    else if(step == 2){
+      double angle = atan2(view_target(0),view_target(1));
+      double weight = angle*SPEED_WEIGHT;
+      m_msg.left = 120 - weight;
+      m_msg.right = 70 - weight;
+      if(dist < 80){
+      	m_msg.left = 90;
+       	m_msg.right = 90;
+        step = 3;
+      }
+    }
+    else{}
     s_pub.publish(state);
     m_pub.publish(m_msg);
+    ros::Duration(0.01).sleep();
     ros::spinOnce();
   }
   return 0;

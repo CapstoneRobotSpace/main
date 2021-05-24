@@ -10,14 +10,14 @@
 #include <Eigen/Dense>
 #include <queue>
 #define ROBOT_WEIGHT 5.5
-#define SPEED_WEIGHT 10
+#define SPEED_WEIGHT 5
 
 using namespace std;
 using namespace Eigen;
 
 int dist = 10000;
 bool is_find = false;
-int step = 1;
+int step = 0;
 
 struct Position{
   double x = 0;
@@ -156,10 +156,11 @@ int main(int argc,char** argv){
   
   int turn_cnt = 0;
   bool turn_flag = false;
+  ros::Duration(10).sleep();
   while(ros::ok()){
     if(step == 0){
-      m_msg.left = 90;
-      m_msg.right = 90;
+      m_msg.left = 1500;
+      m_msg.right = 1500;
       if(abs(unit(2)) < 0.4){
         state.data = 2;      
       }
@@ -170,8 +171,8 @@ int main(int argc,char** argv){
         state.data = 0;      
       }
       if(state.data > 0){;
-	 cout<<"force : "<<(force.abs_sum()-1)*ROBOT_WEIGHT<<endl;
-         if((force.abs_sum()-1)*ROBOT_WEIGHT > 1000){
+	 cout<<"force : "<<abs(force.abs_sum()-1)*ROBOT_WEIGHT<<endl;
+         if(abs(force.abs_sum()-1)*ROBOT_WEIGHT > 500){
             step = 1;
             ros::Duration(2).sleep();      
 	 }
@@ -180,17 +181,17 @@ int main(int argc,char** argv){
     else if(step == 1){
       if(!is_find){
          if(!turn_flag){
-           m_msg.left = 75;
-           m_msg.right = 105;
+           m_msg.left = 1500 + 20 - turn_cnt/10;
+           m_msg.right = 1500;
          }
          else{
-           m_msg.left = 105;
-           m_msg.right = 75;
+           m_msg.left = 1500;
+           m_msg.right = 1500 + 20 - turn_cnt/10;
          }
          if(turn_cnt > 200){
-           m_msg.left = 90;
-           m_msg.right = 90;
-           if(turn_cnt > 300){
+           m_msg.left = 1500;
+           m_msg.right = 1500;
+           if(turn_cnt > 250){
              turn_flag = !turn_flag;
              turn_cnt = 0;
            }
@@ -204,15 +205,33 @@ int main(int argc,char** argv){
       double angle = atan2(view_target(0),view_target(1));
       cout<<"angle : "<<angle<<endl;
       double weight = angle*SPEED_WEIGHT;
-      m_msg.left = 120 + weight;
-      m_msg.right = 70 + weight;
+      m_msg.left = 1520 + weight;
+      m_msg.right = 1480 + weight;
       if(dist < 80){
-      	m_msg.left = 90;
-       	m_msg.right = 90;
+      	m_msg.left = 1500;
+       	m_msg.right = 1500;
         step = 3;
       }
     }
-    else{}
+    else if(step == 3){
+	ros::Duration(20).sleep();
+	turn_cnt = 0;
+        step = 4;
+    }
+    else{
+      if(turn_cnt < 100){
+         m_msg.left = 1480;
+         m_msg.right = 1520;
+      }
+      else{
+        turn_cnt = 0;
+        m_msg.left = 1500;
+        m_msg.right = 1500;
+        step = 0;
+        is_find = false;
+      }
+      turn_cnt++;
+    }
     s_pub.publish(state);
     m_pub.publish(m_msg);
     ros::Duration(0.01).sleep();

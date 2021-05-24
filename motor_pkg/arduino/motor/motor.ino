@@ -7,16 +7,16 @@ Servo left,right;
 
 
 void messageCb( const life_msgs::motor& msg){
-  left.write(msg.left);
-  right.write(msg.right);
+  left.writeMicroseconds(msg.left);
+  right.writeMicroseconds(msg.right);
 }
 
 ros::Subscriber<life_msgs::motor> sub("motor", &messageCb );
 void setup() {
   left.attach(5);
   right.attach(6);
-  left.write(90);
-  right.write(90);
+  left.writeMicroseconds(1500);
+  right.writeMicroseconds(1500);
   nh.initNode();
   nh.subscribe(sub);
 }

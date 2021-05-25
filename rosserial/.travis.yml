@@ -1,26 +1,29 @@
-# This config uses industrial_ci (https://github.com/ros-industrial/industrial_ci.git).
-# For troubleshooting, see readme (https://github.com/ros-industrial/industrial_ci/blob/master/README.rst)
-
+sudo: required
+dist: bionic
 language: generic
 
-services:
-  - docker
-
-cache:
-  directories:
-    - $HOME/.ccache
-
-git:
-  quiet: true
-
 env:
-  global:
-    - ROS_REPO=ros
-    - CCACHE_DIR=$HOME/.ccache
-  matrix:
-    - ROS_DISTRO="noetic" ROS_REPO=ros-shadow-fixed
+  - CI_ROS_DISTRO=melodic CC=gcc CXX=g++ PATH=/usr/sbin:/usr/bin:/sbin:/bin
+  - CI_ROS_DISTRO=melodic CC=clang CXX=clang++ PATH=/usr/local/clang/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+before_install:
+  - sudo sh -c 'echo "deb http://packages.ros.org/ros-shadow-fixed/ubuntu bionic main" > /etc/apt/sources.list.d/ros-latest.list'
+  - wget http://packages.ros.org/ros.key -O - | sudo apt-key add -
+  - sudo apt-get update
+  - sudo apt-get install dpkg -y
+  - sudo apt-get install python-rosdep -y
+  - sudo rosdep init
+  - rosdep update
 
 install:
-  - git clone --quiet --depth 1 https://github.com/ros-industrial/industrial_ci.git .industrial_ci -b master
+  - mkdir -p ~/catkin_ws/src
+  - cd ~/catkin_ws
+  - ln -s $TRAVIS_BUILD_DIR src
+  - rosdep install --from-paths src --ignore-src --rosdistro=$CI_ROS_DISTRO -y
+
 script:
-  - .industrial_ci/travis.sh
+  - source /opt/ros/$CI_ROS_DISTRO/setup.bash
+  - catkin_make install
+  - catkin_make tests
+  - devel/env.sh catkin_make run_tests -j1
+  - catkin_test_results build

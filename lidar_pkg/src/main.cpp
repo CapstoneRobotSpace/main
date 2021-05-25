@@ -41,7 +41,7 @@ int main(int argc,char **argv){
 				if(check == buf[8]){
 					unsigned int temp = (0xffff & buf[3])<<8;
 					temp += buf[2];
-					if(temp < 180000)
+					if(temp < 1000)
 						dist_msg.dist = temp;
 		dist_pub.publish(dist_msg);
 				}

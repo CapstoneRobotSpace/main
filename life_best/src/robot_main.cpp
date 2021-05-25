@@ -10,7 +10,7 @@
 #include <Eigen/Dense>
 #include <queue>
 #define ROBOT_WEIGHT 5.5
-#define SPEED_WEIGHT 5
+#define SPEED_WEIGHT 10
 
 using namespace std;
 using namespace Eigen;
@@ -206,7 +206,7 @@ int main(int argc,char** argv){
       cout<<"angle : "<<angle<<endl;
       double weight = angle*SPEED_WEIGHT;
       m_msg.left = 1520 + weight;
-      m_msg.right = 1480 + weight;
+      m_msg.right = 1460 + weight;
       if(dist < 80){
       	m_msg.left = 1500;
        	m_msg.right = 1500;
@@ -220,7 +220,7 @@ int main(int argc,char** argv){
     }
     else{
       if(turn_cnt < 100){
-         m_msg.left = 1480;
+         m_msg.left = 1460;
          m_msg.right = 1520;
       }
       else{
